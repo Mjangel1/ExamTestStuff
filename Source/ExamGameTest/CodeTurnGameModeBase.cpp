@@ -10,7 +10,9 @@ ACodeTurnGameModeBase::ACodeTurnGameModeBase()
 {
 	PlayerClass = APlayerPawn::StaticClass();
 
-	
+	CurrentPlayer = nullptr;
+	Player1 = nullptr;
+	Player2 = nullptr;
 }
 
 void ACodeTurnGameModeBase::BeginPlay()
@@ -50,6 +52,7 @@ APawn* ACodeTurnGameModeBase::Dequeue_Implementation()
 	{
 		DequeueActor = PlayerArray[0];
 		PlayerArray.RemoveAt(0);
+
 	}
 
 	return DequeueActor;
@@ -82,29 +85,58 @@ void ACodeTurnGameModeBase::SpawnPlayers()
 void ACodeTurnGameModeBase::SwitchPlayers_Implementation()
 {
 
+	//reference to return Pawn that the function returns
+
+	if (PlayerArray.Num() == 0)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, TEXT("Empty"));
+	}
+
 	if (CurrentPlayer == PlayerArray[0])
 	{
+		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, TEXT("equal"));
 		CurrentPlayer->UnPossessed();
-		Dequeue_Implementation();
-		
-		CurrentPlayer = PlayerArray[0];
-
 		Enqueue_Implementation(Dequeue_Implementation());
 
-		CurrentPlayer->PossessedBy(PlayerController);
+
+		if (!PlayerArray.IsEmpty())
+		{
+			//GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, TEXT("Assigned"));
+			
+			CurrentPlayer = PlayerArray[0];
+
+			if (CurrentPlayer && PlayerController)
+			{
+				
+				PlayerController->Possess(CurrentPlayer);
+				GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, TEXT("Change to new player"));
+			}
+		}
+
+		
 
 	}
 	else
 	{
-		
+		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, TEXT("not equal"));
 		CurrentPlayer->UnPossessed();
-		Dequeue_Implementation();
-
-		CurrentPlayer = PlayerArray[0];
-
 		Enqueue_Implementation(Dequeue_Implementation());
 
-		CurrentPlayer->PossessedBy(PlayerController);
+
+		if (!PlayerArray.IsEmpty())
+		{
+			//GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, TEXT("Assigned"));
+
+			CurrentPlayer = PlayerArray[0];
+
+			if (CurrentPlayer && PlayerController)
+			{
+
+				PlayerController->Possess(CurrentPlayer);
+				//GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, TEXT("Change to player1"));
+			}
+		}
+		
 	}
 }
 
