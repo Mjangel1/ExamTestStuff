@@ -54,6 +54,7 @@ public:
 
 	UFUNCTION()
 	void SpawnPlayers();
+	void DoWork();
 
 	UFUNCTION(BlueprintNativeEvent,BlueprintCallable, Category = "Switch Players")
 	void SwitchPlayers();

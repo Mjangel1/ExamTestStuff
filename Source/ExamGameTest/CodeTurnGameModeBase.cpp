@@ -19,9 +19,9 @@ void ACodeTurnGameModeBase::BeginPlay()
 {
 	Super::BeginPlay();
 
-	PlayerController = UGameplayStatics::GetPlayerController(GetWorld(), 0);
-	SpawnPlayers();
 	
+	SpawnPlayers();
+	PlayerController = UGameplayStatics::GetPlayerController(GetWorld(), 0);
 	
 	CurrentPlayer = PlayerArray[0];
 	if (PlayerController != nullptr)
@@ -40,6 +40,7 @@ void ACodeTurnGameModeBase::Enqueue_Implementation(APawn* Actor)
 {
 
 	PlayerArray.Emplace(Actor);
+	//GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Green, TEXT("Player Enqueued"));
 
 }
 
@@ -71,10 +72,6 @@ void ACodeTurnGameModeBase::SpawnPlayers()
 	Player1 = GetWorld()->SpawnActor<APlayerPawn>(PlayerClass, Player1Location, Rotation, SpawnParameters);
 	Player2 = GetWorld()->SpawnActor<APlayerPawn>(PlayerClass, Player2Location, Rotation, SpawnParameters);
 
-	/*TArray<AActor*> PlayersFound;
-	UGameplayStatics::GetAllActorsOfClass(GetWorld(), PlayerClass, PlayersFound);
-	Player1 = Cast<APlayerPawn>(PlayersFound[0]);
-	Player2 = Cast<APlayerPawn>(PlayersFound[1]);*/
 	Enqueue_Implementation(Player1);
 	
 	Enqueue_Implementation(Player2);
@@ -82,61 +79,52 @@ void ACodeTurnGameModeBase::SpawnPlayers()
 
 }
 
+void ACodeTurnGameModeBase::DoWork()
+{
+	PlayerController->Possess(CurrentPlayer);
+	GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, TEXT("Change to new player"));
+}
+
 void ACodeTurnGameModeBase::SwitchPlayers_Implementation()
 {
-
-	//reference to return Pawn that the function returns
+	
 
 	if (PlayerArray.Num() == 0)
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, TEXT("Empty"));
+
+		return;
 	}
 
-	if (CurrentPlayer == PlayerArray[0])
+	// calls dequeue first and get the pawn return, then call enqueue
+	APawn* PlayerDequeued = Dequeue_Implementation();
+
+	if (IsValid(CurrentPlayer))
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, TEXT("equal"));
 		CurrentPlayer->UnPossessed();
-		Enqueue_Implementation(Dequeue_Implementation());
+	}
+
+	//Enqueue the Player that was removed from the que back into it
+	Enqueue_Implementation(PlayerDequeued);
+	
 
 
-		if (!PlayerArray.IsEmpty())
-		{
-			//GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, TEXT("Assigned"));
+	if (!PlayerArray.IsEmpty())
+	{
+		//GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, TEXT("Assigned"));
+
+		CurrentPlayer = PlayerArray[0];
+		FString Name = CurrentPlayer->GetName();
 			
-			CurrentPlayer = PlayerArray[0];
-
-			if (CurrentPlayer && PlayerController)
-			{
-				
-				PlayerController->Possess(CurrentPlayer);
-				GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, TEXT("Change to new player"));
-			}
-		}
-
 		
 
-	}
-	else
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, TEXT("not equal"));
-		CurrentPlayer->UnPossessed();
-		Enqueue_Implementation(Dequeue_Implementation());
-
-
-		if (!PlayerArray.IsEmpty())
+		if (IsValid(CurrentPlayer) && IsValid(PlayerController))
 		{
-			//GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, TEXT("Assigned"));
+			GetWorld()->GetTimerManager().SetTimerForNextTick(this, &ACodeTurnGameModeBase::DoWork);
 
-			CurrentPlayer = PlayerArray[0];
-
-			if (CurrentPlayer && PlayerController)
-			{
-
-				PlayerController->Possess(CurrentPlayer);
-				//GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, TEXT("Change to player1"));
-			}
 		}
-		
 	}
+	
+
 }
 
